@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 # Author: Barry Qu
 # Date: 2019-06-18
@@ -10,7 +10,7 @@
 
 # Sudo password
 user_passwd=
-
+python3_path="/usr/local/python3/"
 # Echo styles
 
 red='\033[31m'
@@ -24,7 +24,7 @@ bold='\033[1m'
 
 # Directories
 
-FDB_PATH = "./.database/FDB/"
+FDB_PATH="./.database/FDB/"
 FDB_BACKUP_PATH="./.database/FDB_BACKUP/"
 DFL_INPUT="./workspace/input/DFL/"
 FCF_FORTIGATE="./workspace/input/FCF/fortigate/"
@@ -70,9 +70,21 @@ print_successful_log(){
 # ==================================================================================
 
 check_user () {
+	typeset -u user_choice
+	read -p "Are you sure you want to build the environment now?(Y/N): " user_choice
+
+	while [[ ${user_choice} != "Y" && ${user_choice} != "N" ]]
+	do
+    	read -p "Incorrect input, please try again(Y/N): " user_choice
+	done
+
+	if [[ ${user_choice} == "N" ]];then
+		echo Thanks for using FRMS, see you!
+		exit 1
+	fi
+
 	if [[ $EUID -ne 0 ]];then
-	    echo -e ${bold}${red}[Tips] You are not the root.${plain}
-		echo  So please enter your password to enable sudo permissions.
+	    echo -e ${bold}${red}[Tips] You are not the root, please enter your password to enable sudo permissions.${plain}
 	    PRINT=`stty -g`
 		stty -echo
 	    read -p 'Enter your password: ' user_passwd
@@ -146,28 +158,34 @@ install_python3() {
 	echo ==================================================================================
 	echo
 	if [ $user_passwd = "" ];then
-		if [ ! -d "/usr/local/python3/" ];then
-	    	mkdir /usr/local/python3
+		if [ ! -d ${python3_path} ];then
+	    	mkdir ${python3_path}
+	    else
+	    	python3_path="/usr/local/python3.6/"
+	    	mkdir ${python3_path}
 		fi
 		cd ../python/
 		tar -zxvf Python-3.6.8.tgz
 		cd ./Python-3.6.8/
-		./configure --prefix=/usr/local/python3 \
+		./configure --prefix=${python3_path} \
 		&& make -j4 && make install \
-		&& ln -s /usr/local/python3/bin/python3.6 /usr/bin/python3 \
-		&& ln -s /usr/local/python3/bin/pip3.6 /usr/bin/pip3 \
+		&& ln -s ${python3_path}bin/python3.6 /usr/bin/python3 \
+		&& ln -s ${python3_path}bin/pip3.6 /usr/bin/pip3 \
 		&& cd ../ && rm -rf Python-3.6.8/
 	else
-		if [ ! -d "/usr/local/python3/" ];then
-	    	echo ${user_passwd} |sudo -S mkdir /usr/local/python3
+		if [ ! -d ${python3_path} ];then
+	    	echo ${user_passwd} |sudo -S mkdir ${python3_path}
+	    else
+	    	python3_path="/usr/local/python3.6/"
+	    	echo ${user_passwd} |sudo -S mkdir ${python3_path}
 		fi
 		cd ../python/
 		tar -zxvf Python-3.6.8.tgz
 		cd ./Python-3.6.8/
-		echo ${user_passwd} |sudo -S ./configure --prefix=/usr/local/python3 \
+		echo ${user_passwd} |sudo -S ./configure --prefix=${python3_path} \
 		&& echo ${user_passwd} |sudo -S make -j4 && echo ${user_passwd} |sudo -S make install \
-		&& echo ${user_passwd} |sudo -S ln -s /usr/local/python3/bin/python3.6 /usr/bin/python3 \
-		&& echo ${user_passwd} |sudo -S ln -s /usr/local/python3/bin/pip3.6 /usr/bin/pip3 \
+		&& echo ${user_passwd} |sudo -S ln -s ${python3_path}bin/python3.6 /usr/bin/python3 \
+		&& echo ${user_passwd} |sudo -S ln -s ${python3_path}bin/pip3.6 /usr/bin/pip3 \
 		&& cd ../ && echo ${user_passwd} |sudo -S rm -rf Python-3.6.8/
 	fi
 	python_version=`python3 --version`
